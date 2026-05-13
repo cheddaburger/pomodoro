@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEON POMODORO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --cyan:   #00e5ff;
+      --pink:   #ff00dd;
+      --purple: #c000ff;
+      --bg:     #07071a;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── BACKGROUND LAYERS ── */
+
+    .grid-floor {
+      position: fixed;
+      bottom: 0; left: 0;
+      width: 100%; height: 55%;
+      background:
+        repeating-linear-gradient(transparent, transparent 59px, rgba(0,229,255,.14) 59px, rgba(0,229,255,.14) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0,229,255,.14) 79px, rgba(0,229,255,.14) 80px);
+      transform: perspective(350px) rotateX(72deg);
+      transform-origin: bottom center;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .scanlines {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,.10) 3px, rgba(0,0,0,.10) 4px
+      );
+      pointer-events: none; z-index: 900;
+    }
+
+    .vignette {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,20,.85) 100%);
+      pointer-events: none; z-index: 901;
+    }
+
+    /* ── APP ── */
+
+    .app {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 40px 54px;
+    }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: 2rem;
+      color: var(--pink);
+      text-shadow:
+        0 0 5px var(--pink),
+        0 0 12px var(--pink),
+        0 0 28px var(--pink),
+        0 0 60px var(--pink);
+      letter-spacing: 12px;
+      margin-bottom: 8px;
+      animation: flicker 9s infinite;
+    }
+
+    @keyframes flicker {
+      0%,87%,89%,91%,93%,100% { opacity: 1; }
+      88% { opacity: .7; }
+      90% { opacity: .95; }
+      92% { opacity: .5; }
+    }
+
+    .tagline {
+      font-size: 0.42rem;
+      letter-spacing: 7px;
+      color: var(--purple);
+      text-shadow: 0 0 7px var(--purple);
+      margin-bottom: 32px;
+    }
+
+    /* ── MODE TABS ── */
+
+    .tabs { display: flex; gap: 14px; justify-content: center; margin-bottom: 20px; }
+
+    .tab {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.52rem;
+      padding: 10px 18px;
+      background: transparent;
+      border: 2px solid;
+      cursor: pointer;
+      letter-spacing: 3px;
+      transition: all .25s;
+    }
+    .tab:active { transform: scale(.96); }
+
+    .tab-work { color: var(--cyan); border-color: rgba(0,229,255,.3); }
+    .tab-work.on, .tab-work:hover {
+      border-color: var(--cyan);
+      background: rgba(0,229,255,.08);
+      box-shadow: 0 0 10px var(--cyan), 0 0 22px rgba(0,229,255,.25);
+      text-shadow: 0 0 8px var(--cyan);
+    }
+
+    .tab-break { color: var(--pink); border-color: rgba(255,0,221,.3); }
+    .tab-break.on, .tab-break:hover {
+      border-color: var(--pink);
+      background: rgba(255,0,221,.08);
+      box-shadow: 0 0 10px var(--pink), 0 0 22px rgba(255,0,221,.25);
+      text-shadow: 0 0 8px var(--pink);
+    }
+
+    /* ── STATUS LABEL ── */
+
+    .status {
+      font-size: 0.42rem;
+      letter-spacing: 5px;
+      height: 14px;
+      margin-bottom: 14px;
+    }
+    .status.work { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+    .status.brk  { color: var(--pink); text-shadow: 0 0 8px var(--pink); }
+
+    /* ── TIMER BOX ── */
+
+    .timer-box {
+      display: inline-block;
+      position: relative;
+      border: 2px solid var(--cyan);
+      padding: 36px 62px;
+      box-shadow:
+        0 0 8px var(--cyan),
+        0 0 20px var(--cyan),
+        0 0 40px rgba(0,229,255,.35),
+        inset 0 0 20px rgba(0,229,255,.04);
+      transition: border-color .5s, box-shadow .5s;
+      margin-bottom: 22px;
+    }
+
+    /* Purple corner accents */
+    .timer-box::before {
+      content: '';
+      position: absolute;
+      top: -5px; left: -5px;
+      width: 18px; height: 18px;
+      border-top: 3px solid var(--purple);
+      border-left: 3px solid var(--purple);
+      box-shadow: -1px -1px 8px var(--purple);
+    }
+    .timer-box::after {
+      content: '';
+      position: absolute;
+      bottom: -5px; right: -5px;
+      width: 18px; height: 18px;
+      border-bottom: 3px solid var(--purple);
+      border-right: 3px solid var(--purple);
+      box-shadow: 1px 1px 8px var(--purple);
+    }
+
+    .timer-box.brk {
+      border-color: var(--pink);
+      box-shadow:
+        0 0 8px var(--pink),
+        0 0 20px var(--pink),
+        0 0 40px rgba(255,0,221,.35),
+        inset 0 0 20px rgba(255,0,221,.04);
+    }
+
+    @keyframes alarm {
+      0%,100% {
+        box-shadow:
+          0 0 10px var(--pink), 0 0 28px var(--pink),
+          0 0 55px var(--pink), inset 0 0 25px rgba(255,0,221,.1);
+      }
+      50% {
+        box-shadow:
+          0 0 25px var(--pink), 0 0 60px var(--pink),
+          0 0 110px var(--pink), inset 0 0 50px rgba(255,0,221,.2);
+      }
+    }
+    .timer-box.alarm { animation: alarm .45s ease-in-out infinite; }
+
+    /* ── DIGITS ── */
+
+    .digits {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 5rem;
+      letter-spacing: 10px;
+      color: var(--cyan);
+      text-shadow:
+        0 0 5px var(--cyan),
+        0 0 12px var(--cyan),
+        0 0 26px var(--cyan),
+        0 0 55px var(--cyan);
+      transition: color .5s, text-shadow .5s;
+    }
+
+    .digits.brk {
+      color: var(--pink);
+      text-shadow:
+        0 0 5px var(--pink),
+        0 0 12px var(--pink),
+        0 0 26px var(--pink),
+        0 0 55px var(--pink);
+    }
+
+    .digits.running { animation: digitPulse 2s ease-in-out infinite; }
+    .digits.paused  { opacity: .5; }
+
+    @keyframes digitPulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: .8; }
+    }
+
+    /* ── PROGRESS BAR ── */
+
+    .prog-wrap {
+      width: 390px;
+      height: 5px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(0,229,255,.2);
+      margin: 0 auto 26px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--cyan));
+      box-shadow: 0 0 8px var(--cyan), 0 0 16px rgba(0,229,255,.4);
+      transition: width 1s linear;
+      width: 100%;
+    }
+
+    .prog-fill.brk {
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      box-shadow: 0 0 8px var(--pink), 0 0 16px rgba(255,0,221,.4);
+    }
+
+    /* ── DIVIDER ── */
+
+    .hr {
+      width: 390px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--purple) 35%, var(--purple) 65%, transparent);
+      box-shadow: 0 0 7px var(--purple);
+      margin: 0 auto 26px;
+    }
+
+    /* ── BUTTONS ── */
+
+    .controls { display: flex; gap: 18px; justify-content: center; margin-bottom: 32px; }
+
+    .btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.62rem;
+      padding: 14px 22px;
+      background: transparent;
+      border: 2px solid;
+      cursor: pointer;
+      letter-spacing: 3px;
+      transition: all .2s;
+    }
+    .btn:active { transform: scale(.95); }
+
+    .btn-start { color: var(--cyan); border-color: var(--cyan); }
+    .btn-start:hover {
+      background: rgba(0,229,255,.1);
+      box-shadow: 0 0 12px var(--cyan), 0 0 26px rgba(0,229,255,.3);
+      text-shadow: 0 0 8px var(--cyan);
+    }
+
+    .btn-reset { color: var(--purple); border-color: var(--purple); }
+    .btn-reset:hover {
+      background: rgba(192,0,255,.1);
+      box-shadow: 0 0 12px var(--purple), 0 0 26px rgba(192,0,255,.3);
+      text-shadow: 0 0 8px var(--purple);
+    }
+
+    /* ── SESSION DOTS ── */
+
+    .sessions-label {
+      font-size: 0.4rem;
+      color: var(--purple);
+      letter-spacing: 4px;
+      text-shadow: 0 0 5px var(--purple);
+      margin-bottom: 12px;
+    }
+
+    .dots { display: flex; gap: 18px; justify-content: center; }
+
+    .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(192,0,255,.4);
+      transition: all .4s;
+    }
+    .dot.lit {
+      background: var(--purple);
+      border-color: var(--purple);
+      box-shadow: 0 0 7px var(--purple), 0 0 16px var(--purple);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-floor"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <div class="app">
+    <h1>POMODORO</h1>
+    <p class="tagline">◆ FOCUS ENGINE v1.0 ◆</p>
+
+    <div class="tabs">
+      <button class="tab tab-work on" id="tabWork"  onclick="switchMode('work')">WORK</button>
+      <button class="tab tab-break"   id="tabBreak" onclick="switchMode('break')">BREAK</button>
+    </div>
+
+    <p class="status work" id="status">◆ WORK SESSION ◆</p>
+
+    <div class="timer-box" id="box">
+      <div class="digits" id="digits">25:00</div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-fill" id="bar"></div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="controls">
+      <button class="btn btn-start" id="startBtn" onclick="toggle()">START</button>
+      <button class="btn btn-reset" onclick="reset()">RESET</button>
+    </div>
+
+    <p class="sessions-label">◆ SESSIONS COMPLETED ◆</p>
+    <div class="dots">
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+      <div class="dot" id="d4"></div>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'work', running = false;
+    let timeLeft = 1500, total = 1500, sessions = 0;
+    let tid = null, audioCtx = null;
+
+    const $ = id => document.getElementById(id);
+
+    function getAC() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function chime() {
+      const ac = getAC();
+      // Ascending four-note chord: C5, E5, G5, C6
+      [[523.25, 0], [659.25, .18], [783.99, .37], [1046.5, .56]].forEach(([freq, delay]) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const t = ac.currentTime + delay;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(.28, t + .04);
+        gain.gain.exponentialRampToValueAtTime(.001, t + .58);
+        osc.start(t);
+        osc.stop(t + .65);
+      });
+    }
+
+    function switchMode(m) {
+      mode = m;
+      running = false;
+      clearInterval(tid);
+      tid = null;
+      timeLeft = total = (m === 'work') ? 1500 : 300;
+
+      const work = (m === 'work');
+      $('tabWork').classList.toggle('on', work);
+      $('tabBreak').classList.toggle('on', !work);
+
+      const c = work ? '' : 'brk';
+      $('status').className = `status ${work ? 'work' : 'brk'}`;
+      $('status').textContent = work ? '◆ WORK SESSION ◆' : '◆ BREAK TIME ◆';
+      $('box').className    = `timer-box ${c}`;
+      $('digits').className = `digits ${c}`;
+      $('bar').className    = `prog-fill ${c}`;
+      $('startBtn').textContent = 'START';
+      render();
+    }
+
+    function toggle() { running ? pause() : start(); }
+
+    function start() {
+      getAC(); // warm up AudioContext while user gesture is live
+      running = true;
+      $('startBtn').textContent = 'PAUSE';
+      $('digits').classList.add('running');
+      $('digits').classList.remove('paused');
+      tid = setInterval(tick, 1000);
+    }
+
+    function pause() {
+      running = false;
+      clearInterval(tid); tid = null;
+      $('startBtn').textContent = 'RESUME';
+      $('digits').classList.remove('running');
+      $('digits').classList.add('paused');
+    }
+
+    function reset() {
+      running = false;
+      clearInterval(tid); tid = null;
+      timeLeft = total;
+      $('startBtn').textContent = 'START';
+      $('digits').classList.remove('running', 'paused');
+      $('box').classList.remove('alarm');
+      render();
+    }
+
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        render();
+      } else {
+        clearInterval(tid); tid = null;
+        running = false;
+        done();
+      }
+    }
+
+    function done() {
+      chime();
+      $('startBtn').textContent = 'START';
+      $('digits').classList.remove('running', 'paused');
+      $('box').classList.add('alarm');
+
+      setTimeout(() => {
+        $('box').classList.remove('alarm');
+        if (mode === 'work') {
+          sessions = Math.min(sessions + 1, 4);
+          updateDots();
+          switchMode('break');
+        } else {
+          switchMode('work');
+        }
+      }, 2600);
+    }
+
+    function render() {
+      const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const s = String(timeLeft % 60).padStart(2, '0');
+      $('digits').textContent  = `${m}:${s}`;
+      $('bar').style.width     = (timeLeft / total * 100) + '%';
+    }
+
+    function updateDots() {
+      for (let i = 1; i <= 4; i++)
+        $(`d${i}`).classList.toggle('lit', i <= sessions);
+    }
+  </script>
+</body>
+</html>
