@@ -316,6 +316,41 @@
       border-color: var(--purple);
       box-shadow: 0 0 7px var(--purple), 0 0 16px var(--purple);
     }
+
+    /* ── LOFI RADIO ── */
+
+    .radio-section { margin-top: 28px; }
+
+    .btn-radio {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.4rem;
+      padding: 9px 16px;
+      background: transparent;
+      border: 2px solid rgba(0,229,255,.35);
+      color: var(--cyan);
+      cursor: pointer;
+      letter-spacing: 3px;
+      transition: all .25s;
+    }
+    .btn-radio:hover {
+      border-color: var(--cyan);
+      background: rgba(0,229,255,.08);
+      box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,229,255,.2);
+      text-shadow: 0 0 8px var(--cyan);
+    }
+
+    .radio-player {
+      display: none;
+      margin-top: 16px;
+    }
+    .radio-player.open { display: block; }
+
+    .radio-player iframe {
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 8px var(--cyan), 0 0 20px rgba(0,229,255,.3);
+      display: block;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
@@ -356,6 +391,19 @@
       <div class="dot" id="d2"></div>
       <div class="dot" id="d3"></div>
       <div class="dot" id="d4"></div>
+    </div>
+
+    <div class="radio-section">
+      <button class="btn-radio" onclick="toggleRadio()">♫ LOFI RADIO</button>
+      <div class="radio-player" id="radioPlayer">
+        <iframe
+          width="280" height="158"
+          src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0"
+          title="Lofi Hip Hop Radio"
+          allow="autoplay; encrypted-media"
+          allowfullscreen>
+        </iframe>
+      </div>
     </div>
   </div>
 
@@ -480,6 +528,10 @@
     function updateDots() {
       for (let i = 1; i <= 4; i++)
         $(`d${i}`).classList.toggle('lit', i <= sessions);
+    }
+
+    function toggleRadio() {
+      $('radioPlayer').classList.toggle('open');
     }
   </script>
 </body>
