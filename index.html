@@ -110,6 +110,43 @@
       pointer-events: none; z-index: 901;
     }
 
+    /* ── FOCUS MODE ── */
+
+    body.focus .app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    body.focus h1,
+    body.focus .tagline,
+    body.focus .tabs,
+    body.focus .prog-wrap,
+    body.focus .hr,
+    body.focus .sessions-label,
+    body.focus .dots,
+    body.focus .radio-section { display: none; }
+
+    body.focus .status { margin-bottom: 24px; }
+
+    body.focus .timer-box {
+      padding: 5vw 8vw;
+      margin-bottom: 6vh;
+    }
+
+    body.focus .digits {
+      font-size: 22vw;
+      letter-spacing: 3vw;
+    }
+
+    body.focus .controls {
+      margin-bottom: 0;
+    }
+
     /* ── THEME TOGGLE ── */
 
     .theme-toggle {
@@ -540,20 +577,9 @@
 
     function toggle() { running ? pause() : start(); }
 
-    function enterFS() {
-      const el = document.documentElement;
-      (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen || (() => {})).call(el);
-    }
-
-    function exitFS() {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen || (() => {})).call(document);
-      }
-    }
-
     function start() {
-      getAC(); // warm up AudioContext while user gesture is live
-      enterFS();
+      getAC();
+      document.body.classList.add('focus');
       running = true;
       $('startBtn').textContent = 'PAUSE';
       $('digits').classList.add('running');
@@ -562,7 +588,7 @@
     }
 
     function pause() {
-      exitFS();
+      document.body.classList.remove('focus');
       running = false;
       clearInterval(tid); tid = null;
       $('startBtn').textContent = 'RESUME';
@@ -571,7 +597,7 @@
     }
 
     function reset() {
-      exitFS();
+      document.body.classList.remove('focus');
       running = false;
       clearInterval(tid); tid = null;
       timeLeft = total;
@@ -593,6 +619,7 @@
     }
 
     function done() {
+      document.body.classList.remove('focus');
       chime();
       $('startBtn').textContent = 'START';
       $('digits').classList.remove('running', 'paused');
