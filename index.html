@@ -13,6 +13,7 @@
       --pink:   #ff00dd;
       --purple: #c000ff;
       --bg:     #07071a;
+      --glow:   1;
     }
 
     body {
@@ -24,7 +25,60 @@
       justify-content: center;
       overflow: hidden;
       position: relative;
+      transition: background .4s;
     }
+
+    /* ── LIGHT MODE ── */
+
+    body.light {
+      --cyan:   #0077bb;
+      --pink:   #cc0099;
+      --purple: #8800cc;
+      --bg:     #eeeeff;
+    }
+
+    body.light .grid-floor {
+      background:
+        repeating-linear-gradient(transparent, transparent 59px, rgba(0,100,180,.12) 59px, rgba(0,100,180,.12) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0,100,180,.12) 79px, rgba(0,100,180,.12) 80px);
+    }
+
+    body.light .vignette {
+      background: radial-gradient(ellipse at center, transparent 52%, rgba(180,180,220,.5) 100%);
+    }
+
+    body.light .scanlines {
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px
+      );
+    }
+
+    /* strip most glow in light mode */
+    body.light h1 {
+      text-shadow: 0 0 4px var(--pink);
+      animation: none;
+    }
+    body.light .tagline  { text-shadow: none; }
+    body.light .status   { text-shadow: none; }
+    body.light .digits   { text-shadow: 0 0 6px var(--cyan); }
+    body.light .digits.brk { text-shadow: 0 0 6px var(--pink); }
+    body.light .timer-box {
+      box-shadow: 0 0 6px var(--cyan), inset 0 0 8px rgba(0,119,187,.06);
+    }
+    body.light .timer-box.brk {
+      box-shadow: 0 0 6px var(--pink), inset 0 0 8px rgba(204,0,153,.06);
+    }
+    body.light .prog-fill  { box-shadow: none; }
+    body.light .hr         { box-shadow: none; }
+    body.light .sessions-label { text-shadow: none; }
+    body.light .dot.lit    { box-shadow: 0 0 5px var(--purple); }
+    body.light .tab-work.on, body.light .tab-work:hover { box-shadow: 0 0 6px var(--cyan); }
+    body.light .tab-break.on, body.light .tab-break:hover { box-shadow: 0 0 6px var(--pink); }
+    body.light .btn-start:hover { box-shadow: 0 0 6px var(--cyan); }
+    body.light .btn-reset:hover { box-shadow: 0 0 6px var(--purple); }
+    body.light .btn-radio:hover { box-shadow: 0 0 6px var(--cyan); }
+    body.light .radio-player iframe { box-shadow: 0 0 6px var(--cyan); }
 
     /* ── BACKGROUND LAYERS ── */
 
@@ -54,6 +108,28 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,20,.85) 100%);
       pointer-events: none; z-index: 901;
+    }
+
+    /* ── THEME TOGGLE ── */
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px; right: 20px;
+      z-index: 950;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      padding: 8px 12px;
+      background: transparent;
+      border: 2px solid rgba(0,229,255,.35);
+      color: var(--cyan);
+      cursor: pointer;
+      letter-spacing: 2px;
+      transition: all .25s;
+    }
+    .theme-toggle:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      text-shadow: 0 0 6px var(--cyan);
     }
 
     /* ── APP ── */
@@ -359,6 +435,8 @@
   <div class="scanlines"></div>
   <div class="vignette"></div>
 
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀ LIGHT</button>
+
   <div class="app">
     <h1>POMODORO</h1>
     <p class="tagline">◆ FOCUS ENGINE v1.0 ◆</p>
@@ -532,6 +610,18 @@
 
     function toggleRadio() {
       $('radioPlayer').classList.toggle('open');
+    }
+
+    function toggleTheme() {
+      const light = document.body.classList.toggle('light');
+      $('themeToggle').textContent = light ? '☾ DARK' : '☀ LIGHT';
+      localStorage.setItem('theme', light ? 'light' : 'dark');
+    }
+
+    // Restore saved theme
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.add('light');
+      document.getElementById('themeToggle').textContent = '☾ DARK';
     }
   </script>
 </body>
